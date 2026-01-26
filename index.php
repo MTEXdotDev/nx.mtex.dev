@@ -14,8 +14,9 @@ $response = [
     "status" => "success",
     "meta" => [
         "project" => "MTEX Nexus",
+        "github" => "https://github.com/MTEX-dev/nx.mtex.dev",
         "service" => "nx.mtex.dev",
-        "version" => "1.0.1",
+        "version" => "1.1.0",
         "timestamp" => date('c'),
     ],
     "data" => null
@@ -26,6 +27,8 @@ if ($method === 'OPTIONS') {
     exit();
 }
 
+$lorem_data = include __DIR__ . '/lorem_data.php';
+
 switch ($uriSegments[0] ?? '') {
     case '':
         $response['data'] = [
@@ -34,6 +37,7 @@ switch ($uriSegments[0] ?? '') {
                 "GET /status" => "System status",
                 "GET /user" => "User test stuff",
                 "GET /mock" => "Developer test data",
+                "GET /lorem[/<id>]" => "Lorem test posts",
             ]
         ];
         break;
@@ -62,6 +66,28 @@ switch ($uriSegments[0] ?? '') {
             "registered" => "2026-01-26"
         ];
         break;
+    case 'lorem':
+        $index = $uriSegments[1];
+
+        if (!$index) {
+            $response['data'] = $lorem_data;
+            break;
+        }
+
+        if (array_key_exists($index, $lorem_data)) {
+            $data = $lorem_data[$index];
+            $response['data'] = [
+                "id" => $index,
+                "title" => $data['title'],
+                "content" => $data["content"],
+            ];
+        } else {
+            http_response_code(404);
+            $response['status'] = "error";
+            $response['data'] = ["message" => "Lorem not found"];
+        };
+        break;
+
 
     default:
         http_response_code(404);
