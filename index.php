@@ -16,7 +16,7 @@ $response = [
         "project" => "MTEX Nexus",
         "github" => "https://github.com/MTEX-dev/nx.mtex.dev",
         "service" => "nx.mtex.dev",
-        "version" => "1.1.0",
+        "version" => "1.2.0",
         "timestamp" => date('c'),
     ],
     "data" => null
@@ -34,10 +34,11 @@ switch ($uriSegments[0] ?? '') {
         $response['data'] = [
             "description" => "A lightweight JSON API gateway for seamless data exchange and rapid prototyping.",
             "endpoints" => [
-                "GET /status" => "System status",
+                "GET /status" => "System status & metrics",
                 "GET /user" => "User test stuff",
                 "GET /mock" => "Developer test data",
                 "GET /lorem[/<id>]" => "Lorem test posts",
+                "GET /utility/uuid" => "Generate a UUID"
             ]
         ];
         break;
@@ -45,7 +46,9 @@ switch ($uriSegments[0] ?? '') {
     case 'status':
         $response['data'] = [
             "status" => "operational",
-            "uptime" => "99.98%"
+            "uptime" => "99.98%",
+            "php_version" => PHP_VERSION,
+            "memory_usage" => round(memory_get_usage() / 1024 / 1024, 2) . ' MB'
         ];
         break;
 
@@ -88,6 +91,20 @@ switch ($uriSegments[0] ?? '') {
         };
         break;
 
+    case 'utility': // AI-generated ...
+        if (($uriSegments[1] ?? '') === 'uuid') {
+            $data = random_bytes(16);
+            $data[6] = chr(ord($data[6]) & 0x0f | 0x40);
+            $data[8] = chr(ord($data[8]) & 0x3f | 0x80);
+            $response['data'] = [
+                "uuid" => vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4))
+            ];
+        } else {
+            http_response_code(400);
+            $response['status'] = "error";
+            $response['data'] = ["message" => "Unknown utility"];
+        }
+        break;
 
     default:
         http_response_code(404);
