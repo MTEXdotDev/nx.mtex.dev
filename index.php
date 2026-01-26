@@ -16,7 +16,7 @@ $response = [
         "project" => "MTEX Nexus",
         "github" => "https://github.com/MTEX-dev/nx.mtex.dev",
         "service" => "nx.mtex.dev",
-        "version" => "1.2.0",
+        "version" => "1.2.1",
         "timestamp" => date('c'),
     ],
     "data" => null
@@ -29,6 +29,13 @@ if ($method === 'OPTIONS') {
 
 $lorem_data = include __DIR__ . '/lorem_data.php';
 
+function generateUuidV4() {
+    $data = random_bytes(16);
+    $data[6] = chr(ord($data[6]) & 0x0f | 0x40);
+    $data[8] = chr(ord($data[8]) & 0x3f | 0x80);
+    return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+}
+
 switch ($uriSegments[0] ?? '') {
     case '':
         $response['data'] = [
@@ -37,8 +44,8 @@ switch ($uriSegments[0] ?? '') {
                 "GET /status" => "System status & metrics",
                 "GET /user" => "User test stuff",
                 "GET /mock" => "Developer test data",
-                "GET /lorem[/<id>]" => "Lorem test posts",
-                "GET /utility/uuid" => "Generate a UUID"
+                "GET /lorem[/<id>][?q=keyword]" => "Lorem test posts with search",
+                "GET /utility/uuid[/<count>]" => "Generate one or multiple UUIDs"
             ]
         ];
         break;
@@ -69,8 +76,17 @@ switch ($uriSegments[0] ?? '') {
             "registered" => "2026-01-26"
         ];
         break;
+
     case 'lorem':
-        $index = $uriSegments[1];
+        $index = $uriSegments[1] ?? null;
+        $search = $_GET['q'] ?? null;
+
+        if ($search) {
+            $response['data'] = array_filter($lorem_data, function($item) use ($search) {
+                return stripos($item['title'], $search) !== false || stripos($item['content'], $search) !== false;
+            });
+            break;
+        }
 
         if (!$index) {
             $response['data'] = $lorem_data;
@@ -88,17 +104,22 @@ switch ($uriSegments[0] ?? '') {
             http_response_code(404);
             $response['status'] = "error";
             $response['data'] = ["message" => "Lorem not found"];
-        };
+        }
         break;
 
-    case 'utility': // AI-generated ...
+    case 'utility':
         if (($uriSegments[1] ?? '') === 'uuid') {
-            $data = random_bytes(16);
-            $data[6] = chr(ord($data[6]) & 0x0f | 0x40);
-            $data[8] = chr(ord($data[8]) & 0x3f | 0x80);
-            $response['data'] = [
-                "uuid" => vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4))
-            ];
+            $count = isset($uriSegments[2]) ? min((int)$uriSegments[2], 50) : 1;
+            
+            if ($count > 1) {
+                $uuids = [];
+                for ($i = 0; $i < $count; $i++) {
+                    $uuids[] = generateUuidV4();
+                }
+                $response['data'] = ["uuids" => $uuids, "count" => $count];
+            } else {
+                $response['data'] = ["uuid" => generateUuidV4()];
+            }
         } else {
             http_response_code(400);
             $response['status'] = "error";
