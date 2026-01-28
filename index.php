@@ -16,7 +16,7 @@ $response = [
         "project" => "MTEX Nexus",
         "github" => "https://github.com/MTEX-dev/nx.mtex.dev",
         "service" => "nx.mtex.dev",
-        "version" => "1.2.1",
+        "version" => "1.3.0",
         "timestamp" => date('c'),
     ],
     "data" => null
@@ -28,6 +28,7 @@ if ($method === 'OPTIONS') {
 }
 
 $lorem_data = include __DIR__ . '/lorem_data.php';
+$http_statuses = include __DIR__ . "/http_statuses.php";
 
 function generateUuidV4() {
     $data = random_bytes(16);
@@ -45,7 +46,8 @@ switch ($uriSegments[0] ?? '') {
                 "GET /user" => "User test stuff",
                 "GET /mock" => "Developer test data",
                 "GET /lorem[/<id>][?q=keyword]" => "Lorem test posts with search",
-                "GET /utility/uuid[/<count>]" => "Generate one or multiple UUIDs"
+                "GET /utility/uuid[/<count>]" => "Generate one or multiple UUIDs",
+                "GET /http_status/[<code>]" => "HTTP status code references",
             ]
         ];
         break;
@@ -124,6 +126,23 @@ switch ($uriSegments[0] ?? '') {
             http_response_code(400);
             $response['status'] = "error";
             $response['data'] = ["message" => "Unknown utility"];
+        }
+        break;
+
+    case 'http_status':
+        $code = $uriSegments[1] ?? null;
+
+        if (!$code) {
+            $response['data'] = $http_statuses;
+            break;
+        }
+
+        if (isset($http_statuses[$code])) {
+            $response['data'] = array_merge(['code' => $code], $http_statuses[$code]);
+        } else {
+            http_response_code(404);
+            $response['status'] = 'error';
+            $response['data'] = ["message" => "HTTP status code not found"];
         }
         break;
 
