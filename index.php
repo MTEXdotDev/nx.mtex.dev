@@ -16,7 +16,7 @@ $response = [
         "project" => "MTEX Nexus",
         "github" => "https://github.com/MTEXdotDev/nx.mtex.dev",
         "service" => "nx.mtex.dev",
-        "version" => "1.3.1",
+        "version" => "1.3.2",
         "timestamp" => date('c'),
     ],
     "data" => null
